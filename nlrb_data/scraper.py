@@ -5,8 +5,6 @@ website.
 """
 
 # Standard imports
-import datetime
-import pandas
 import time
 import urllib
 import urllib.parse
@@ -18,6 +16,7 @@ import requests
 # Project imports
 # https://www.nlrb.gov/search/cases?page=1&f[0]=date%3A01/01/2017%20to%2008/24/2017&retain-filters=1
 
+# Constants
 BASE_URL = "https://www.nlrb.gov/search/cases"
 
 
@@ -65,15 +64,17 @@ def get_page_count(url, session=None):
     """
     # Create session if not provided
     if not session:
-        s = requests.Session()
+        session = requests.Session()
 
     # Execute query
-    response = s.get(url)
+    response = session.get(url)
     buffer = response.text
     time.sleep(1)
 
     # Find last "?page=" occurrence.
     pos0 = buffer.rfind("?page=")
+    if pos0 == -1:
+        return 1
     pos1 = buffer.find("&", pos0)
     page_number = int(buffer[(pos0 + 6):pos1])
     return page_number
@@ -142,30 +143,16 @@ def get_case_list(dates=None, company=None):
 
     # Iterate through all page requests
     with requests.Session() as s:
-        for page_number in range(1, max_page_count + 1):
+        for page_number in range(0, max_page_count):
             # Get URL and response
             page_url = get_case_list_url(dates, company, page_number=page_number)
             response = s.get(page_url)
 
             # Parse result and sleep
             cases.extend(parse_case_list(response.text))
+            print(page_url)
+            print(len(cases))
             time.sleep(1)
 
     # Return list of cases
     return cases
-
-if __name__ == "__main__":
-    print(get_case_list_url(dates=(datetime.date(2010, 1, 1),
-                                   datetime.date(2010, 2, 1))))
-    print(get_case_list_url(dates=(datetime.date(2010, 1, 1),
-                                   datetime.date(2010, 2, 1)),
-                            page_number=5))
-    u = (get_case_list_url(company="Hospital", dates=(datetime.date(2017, 1, 1),
-                                                      datetime.date(2017, 2, 1))))
-
-    cases = get_case_list(company="Kaiser", dates=(datetime.date(2010, 1, 1),
-                                                   datetime.date(2010, 2, 1)))
-    print(cases)
-    case_df = pandas.DataFrame(cases)
-    print(case_df)
-    print(case_df.shape)
