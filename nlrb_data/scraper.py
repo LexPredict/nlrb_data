@@ -11,13 +11,16 @@ import urllib.parse
 
 # third-party package imports
 import lxml.html
+import pandas
 import requests
 
 # Project imports
 # https://www.nlrb.gov/search/cases?page=1&f[0]=date%3A01/01/2017%20to%2008/24/2017&retain-filters=1
 
 # Constants
-BASE_URL = "https://www.nlrb.gov/search/cases"
+BASE_SEARCH_URL = "https://www.nlrb.gov/search/cases"
+BASE_URL = "https://www.nlrb.gov"
+SLEEP_INTERVAL = 1
 
 
 def get_case_list_url(dates=None, company=None, page_number=None):
@@ -32,7 +35,7 @@ def get_case_list_url(dates=None, company=None, page_number=None):
 
     # Handle date case
     filter_number = 0
-    url = "{base_url}/".format(base_url=BASE_URL)
+    url = "{base_url}/".format(base_url=BASE_SEARCH_URL)
 
     if company:
         url += urllib.parse.quote(company)
@@ -69,7 +72,7 @@ def get_page_count(url, session=None):
     # Execute query
     response = session.get(url)
     buffer = response.text
-    time.sleep(1)
+    time.sleep(SLEEP_INTERVAL)
 
     # Find last "?page=" occurrence.
     pos0 = buffer.rfind("?page=")
@@ -125,7 +128,7 @@ def parse_case_list(buffer):
     return cases
 
 
-def get_case_list(dates=None, company=None):
+def get_case_list(dates=None, company=None, session=None):
     """
     Get the list of cases matching a given query
     on date or company.
@@ -133,6 +136,10 @@ def get_case_list(dates=None, company=None):
     :param company:
     :return:
     """
+
+    # Create session if not provided
+    if not session:
+        session = requests.Session()
 
     # Setup return structure
     cases = []
@@ -142,17 +149,78 @@ def get_case_list(dates=None, company=None):
     max_page_count = get_page_count(initial_url)
 
     # Iterate through all page requests
-    with requests.Session() as s:
-        for page_number in range(0, max_page_count):
-            # Get URL and response
-            page_url = get_case_list_url(dates, company, page_number=page_number)
-            response = s.get(page_url)
+    for page_number in range(0, max_page_count):
+        # Get URL and response
+        page_url = get_case_list_url(dates, company, page_number=page_number)
+        response = session.get(page_url)
 
-            # Parse result and sleep
-            cases.extend(parse_case_list(response.text))
-            print(page_url)
-            print(len(cases))
-            time.sleep(1)
+        # Parse result and sleep
+        cases.extend(parse_case_list(response.text))
+        print(page_url)
+        print(len(cases))
+        time.sleep(SLEEP_INTERVAL)
 
     # Return list of cases
     return cases
+
+
+def get_case(case_id, session=None):
+    """
+    Get case data from a case ID.
+    :param case_id:
+    :param session:
+    :return:
+    """
+    # Create session if not provided
+    if not session:
+        session = requests.Session()
+
+    # Get case URL and parse response
+    case_url = "{base_url}/case/{case_id}".format(base_url=BASE_URL, case_id=case_id)
+    response = session.get(case_url)
+    document = lxml.html.fromstring(response.text)
+
+    # Get case fields
+    case_number_span = document.find_class("views-label-case").pop()
+    case_number = case_number_span.getnext().text
+
+    case_city_span = document.find_class("views-label-city").pop()
+    case_city = case_city_span.getnext().text
+
+    case_date_filed_span = document.find_class("views-label-date-filed").pop()
+    case_date_filed = case_date_filed_span.getnext().text
+
+    case_region_span= document.find_class("views-label-dispute-region").pop()
+    case_region = case_region_span.getnext().text
+
+    case_status_span = document.find_class("views-label-status").pop()
+    case_status = case_status_span.getnext().text
+
+    case_close_span = document.find_class("views-label-close-method").pop()
+    case_close = case_close_span.getnext().text
+
+    case_docket_table = document.find_class("view-docket-activity").pop()
+    case_docket_df = pandas.read_html(lxml.html.tostring(case_docket_table)).pop()
+
+    allegation_list = []
+    allegation_div = document.find_class("view-allegations").pop()
+    for li in allegation_div.find_class("field-content"):
+        allegation_list.append(li.text)
+
+    case_party_table = document.find_class("view-participants").pop()
+    case_party_df = pandas.read_html(lxml.html.tostring(case_party_table)).pop()
+
+    return {"case_number": case_number,
+            "city": case_city,
+            "date_filed": case_date_filed,
+            "region": case_region,
+            "status": case_status,
+            "close_reason": case_close,
+            "docket": case_docket_df,
+            "allegations": allegation_list,
+            "parties": case_party_df}
+
+
+if __name__ == "__main__":
+    case = get_case("31-CA-029563")
+    print(case)
