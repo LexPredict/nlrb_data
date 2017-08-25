@@ -5,14 +5,17 @@ Software package for scraping data from the National Labor Relations Board.
 * NLRB: https://nlrb.gov/
 * Contact: contact@lexpredict.com
 
+![Logo](https://www.lexpredict.com/wp-content/uploads/2014/08/lexpredict_logo_horizontal_1.png)
+
 ## Licensing
 This software is freely available under the Apache License, Version 2.0.  LexPredict is proud to sponsor open source software in legal!
 
 ## Usage
-
 ### Installation
 ```
-$ pip install https://github.com/LexPredict/nlrb_data/archive/master.zip
+$ git clone https://github.com/LexPredict/nlrb_data.git
+$ cd nlrb_data
+$ pip install -e .
 ```
 
 ### Example
@@ -38,3 +41,4 @@ import pandas
 
 case_list_df = pandas.DataFrame(nlrb_data.get_case_list(dates=(datetime.date(2010, 1, 1), datetime.date(2010, 2, 1))))
 ```
+
