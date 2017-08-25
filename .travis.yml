@@ -1,0 +1,12 @@
+language: python
+python:
+  - "3.4"
+sudo: false
+cache: pip
+install:
+  - pip install -r python-requirements.txt
+  - pip install -e .
+script:
+  - py.test --cov nlrb_data --pylint --pylint-rcfile=.pylintrc nlrb_data
+after_success:
+  - coveralls
