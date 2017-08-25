@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/LexPredict/nlrb_data.svg?branch=master)](https://travis-ci.org/LexPredict/nlrb_data) [![Coverage Status](https://coveralls.io/repos/github/LexPredict/nlrb_data/badge.svg?branch=master)](https://coveralls.io/github/LexPredict/nlrb_data?branch=master)
+
 # NLRB Data Scraper (by LexPredict)
 Software package for scraping data from the National Labor Relations Board.
 
