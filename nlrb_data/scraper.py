@@ -94,13 +94,9 @@ def parse_case_list_li(li):
     case_result = dict()
 
     # Parse title and URL
-    try:
-        title_h3 = li.find_class("title").pop()
-        case_result["title"] = lxml.html.tostring(title_h3, method="text", encoding="utf-8").decode("utf-8").strip()
-        case_result["url"] = title_h3.xpath(".//a").pop().attrib["href"]
-    except IndexError:
-        case_result["title"] = None
-        case_result["url"] = None
+    title_h3 = li.find_class("title").pop()
+    case_result["title"] = lxml.html.tostring(title_h3, method="text", encoding="utf-8").decode("utf-8").strip()
+    case_result["url"] = title_h3.xpath(".//a").pop().attrib["href"]
 
     # Parse case info inside snippet
     for label in li.xpath(".//span[contains(@class, 'label')]"):

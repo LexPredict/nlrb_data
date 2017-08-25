@@ -86,3 +86,21 @@ def test_scrape():
         time.sleep(SLEEP_INTERVAL)
 
     assert_equal(case_info["participants"].shape[0], 3)
+
+
+def test_get_case_no_docket():
+    """
+    Test case detail without docket info.
+    :return:
+    """
+    case_info = get_case("21-CA-037931")
+    assert_equal(case_info["docket"].shape[0], 0)
+
+
+def test_get_case_no_allegations():
+    """
+    Test case detail without allegation info.
+    :return:
+    """
+    case_info = get_case("02-RC-023360")
+    assert_equal(len(case_info["allegations"]), 0)
