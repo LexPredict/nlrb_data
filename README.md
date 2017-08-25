@@ -3,6 +3,7 @@ Software package for scraping data from the National Labor Relations Board.
 
 * LexPredict: https://lexpredict.com/
 * NLRB: https://nlrb.gov/
+* Contact: contact@lexpredict.com
 
 ## Licensing
 This software is freely available under the Apache License, Version 2.0.  LexPredict is proud to sponsor open source software in legal!
