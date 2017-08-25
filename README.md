@@ -23,24 +23,51 @@ $ pip install -e .
 ### Example
 ```
 import datetime
-import nlrb_data
+from nlrb_data.scraper import get_case_list, get_case
 
 # Get case list
-case_list = nlrb_data.get_case_list(dates=(datetime.date(2010, 1, 1), datetime.date(2010, 2, 1)), company="Acme")
+case_list = get_case_list(dates=(datetime.date(2010, 1, 1), datetime.date(2010, 2, 1)), company="Acme")
 print(case_list[0])
 
 # Iterate through results, retrieving detailed info
 for case in case_list:
-    case_info = nlrb_data.get_case(case["case_number"])
+    case_info = get_case(case["case_number"])
     print(case_info)
 ```
 
 **Designed for use with pandas**:
 ```
 import datetime
-import nlrb_data
 import pandas
+from nlrb_data.scraper import get_case_list
 
-case_list_df = pandas.DataFrame(nlrb_data.get_case_list(dates=(datetime.date(2010, 1, 1), datetime.date(2010, 2, 1))))
+case_list_df = pandas.DataFrame(get_case_list(dates=(datetime.date(2010, 1, 1), datetime.date(2010, 2, 1))))
 ```
 
+**Example Result**:
+```
+>>> from nlrb_data.scraper import get_case_list
+>>> get_case("01-CA-104714")
+{'docket':          Date                              Document Issued/Filed By
+0  06/13/2013  Letter Approving Withdrawal Request*       NLRB - GC
+1  05/13/2013     Initial Letter to Charging Party*       NLRB - GC
+2  05/13/2013      Initial Letter to Charged Party*       NLRB - GC
+3  05/08/2013       Signed Charge Against Employer*  Charging Party, 
+'allegations': 
+  ['8(a)(1) Weingarten'],
+'status': 'Closed on 06/11/2013',
+'case_number': '01-CA-104714',
+'date_filed': '05/08/2013',
+'region': 'Region 01, Boston, Massachusetts',
+'city': 'MEDFIELD, MA',
+'close_reason': 'Withdrawal Adjusted',
+'participants':                                          Participant  \
+0  Charged Party / Respondent Employer  ACE & ACM...
+1  Charging Party Additional Service  Internation...
+2  Charging Party Union  INTERNATIONAL BROTHERHOO...
+
+                     Address  Phone
+0    Medfield, MA 02052-1528    NaN
+1  Washington, DC 20001-2130    NaN
+2      BOSTON, MA 02129-1109    NaN  }
+```
