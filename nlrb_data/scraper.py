@@ -5,6 +5,7 @@ website.
 """
 
 # Standard imports
+import string
 import time
 import urllib
 import urllib.parse
@@ -76,11 +77,15 @@ def get_page_count(url, session=None):
     time.sleep(SLEEP_INTERVAL)
 
     # Find last "?page=" occurrence.
-    pos0 = buffer.rfind("?page=")
+    pos0 = pos1 = buffer.rfind("?page=") + 6
     if pos0 == -1:
         return 1
-    pos1 = buffer.find("&", pos0)
-    page_number = int(buffer[(pos0 + 6):pos1])
+    next_char = buffer[pos1]
+    while next_char in string.digits:
+        pos1 += 1
+        next_char = buffer[pos1]   
+    
+    page_number = int(buffer[pos0:pos1])
     return page_number
 
 
@@ -209,8 +214,11 @@ def get_case(case_id, session=None):
     case_status_span = document.find_class("views-label-status").pop()
     case_status = case_status_span.getnext().text
 
-    case_close_span = document.find_class("views-label-close-method").pop()
-    case_close = case_close_span.getnext().text
+    try:
+        case_close_span = document.find_class("views-label-close-method").pop()
+        case_close = case_close_span.getnext().text
+    except IndexError:
+        case_close = None
 
     # Parse docket table with pandas
     case_docket_table = document.find_class("view-docket-activity").pop()
