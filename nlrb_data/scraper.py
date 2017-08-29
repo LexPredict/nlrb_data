@@ -77,13 +77,17 @@ def get_page_count(url, session=None):
     time.sleep(SLEEP_INTERVAL)
 
     # Find last "?page=" occurrence.
-    pos0 = pos1 = buffer.rfind("?page=") + 6
+    pos0 = pos1 = buffer.rfind("?page=")
     if pos0 == -1:
         return 1
+    else:
+        pos0 += 6
+        pos1 = pos0
+    
     next_char = buffer[pos1]
     while next_char in string.digits:
         pos1 += 1
-        next_char = buffer[pos1]   
+        next_char = buffer[pos1]    
     
     page_number = int(buffer[pos0:pos1])
     return page_number
