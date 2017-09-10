@@ -186,6 +186,132 @@ def get_case_list(dates=None, company=None, session=None):
     return cases
 
 
+def get_docket_data(document):
+    """
+    Parse an lxml document for docket activity and return a dataframe.
+    :param document:
+    :return:
+    """
+    # Find docket element
+    case_docket_table = document.find_class("view-docket-activity").pop()
+
+    # Parse with pandas or return empty
+    try:
+        case_docket_df = pandas.read_html(lxml.html.tostring(case_docket_table)).pop()
+    except ValueError:
+        case_docket_df = pandas.DataFrame()
+
+    return case_docket_df
+
+
+def get_allegation_data(document):
+    """
+    Parse an lxml document for allegations and return a list.
+    :param document:
+    :return:
+    """
+
+    # Setup return structure
+    allegation_list = []
+
+    try:
+        # Find element and parse <li>s
+        allegation_div = document.find_class("view-allegations").pop()
+        for li in allegation_div.find_class("field-content"):
+            allegation_list.append(li.text)
+    except IndexError:
+        pass
+
+    return allegation_list
+
+
+def get_party_data(document):
+    """
+    Parse an lxml document for participants data and return a dataframe.
+    :param document:
+    :return:
+    """
+    # Find the HTML element
+    case_party_table = document.find_class("view-participants").pop()
+
+    try:
+        # Get table header
+        table_header = case_party_table.xpath(".//thead").pop()
+        table_header_columns = [lxml.html.tostring(th, method="text", encoding="utf-8").strip().decode("utf-8")
+                                for th in table_header.xpath(".//th")]
+
+        # Get table rows
+        table_data = []
+        for tr in case_party_table.xpath(".//tr")[1:]:
+            row = {}
+            i = 0
+            for td in tr.xpath(".//td"):
+                td_text = lxml.html.tostring(td, method="text", encoding="utf-8").strip().decode("utf-8")
+
+                # Handle field types
+                if table_header_columns[i] == "Participant":
+                    # Parse participant types
+                    td_lines = [line.strip() for line in td_text.splitlines()]
+                    if len(td_lines) == 3:
+                        row["party_role"] = td_lines[0]
+                        row["party_type"] = td_lines[1]
+                        row["party_name"] = td_lines[2]
+                    elif len(td_lines) == 4:
+                        row["party_role"] = td_lines[0]
+                        row["party_type"] = td_lines[1]
+                        row["party_name"] = td_lines[2]
+                        row["party_firm"] = td_lines[3]
+                    elif len(td_lines) > 1:
+                        row["party_role"] = td_lines[0]
+                        row["party_name"] = "\n".join(td_lines[1:])
+                    else:
+                        pass
+                elif table_header_columns[i] == "Address":
+                    row["party_address"] = td_text
+                elif table_header_columns[i] == "Phone":
+                    row["party_phone"] = td_text
+
+                i += 1
+
+            table_data.append(row)
+
+        case_party_df = pandas.DataFrame(table_data)
+    except ValueError:
+        case_party_df = pandas.DataFrame()
+
+    return case_party_df
+
+
+def get_election_data(document):
+    """
+    Parse lxml document for election data and return dataframe.
+    :param document:
+    :return:
+    """
+    try:
+        election_div = document.find_class("view-elections").pop()
+        election_rows = []
+        for row_div in election_div.find_class("views-row"):
+            row = {}
+            for field_div in row_div.find_class("views-field"):
+                if len(field_div.getchildren()) == 1:
+                    continue
+                field_label = lxml.html.tostring(field_div.xpath(".//div")[0], method="text",
+                                                 encoding="utf-8").strip().decode("utf-8")
+                field_value = lxml.html.tostring(field_div.xpath(".//div")[1], method="text",
+                                                 encoding="utf-8").strip().decode("utf-8")
+                row[field_label] = field_value
+
+            if len(row) > 0:
+                election_rows.append(row)
+
+        election_data = pandas.DataFrame(election_rows)
+    except IndexError:
+        election_data = pandas.DataFrame()
+
+    return election_data
+
+
 def get_case(case_id, session=None):
     """
     Get case data from a case ID.
@@ -225,75 +351,27 @@ def get_case(case_id, session=None):
         case_close = None
 
     # Parse docket table with pandas
-    case_docket_table = document.find_class("view-docket-activity").pop()
-    try:
-        case_docket_df = pandas.read_html(lxml.html.tostring(case_docket_table)).pop()
-    except ValueError:
-        case_docket_df = pandas.DataFrame()
+    case_docket_df = get_docket_data(document)
 
     # Parse allegation list
-    allegation_list = []
-    try:
-        allegation_div = document.find_class("view-allegations").pop()
-        for li in allegation_div.find_class("field-content"):
-            allegation_list.append(li.text)
-    except IndexError:
-        pass
+    allegation_list = get_allegation_data(document)
+
+    # Parse election block if present
+    election_data = get_election_data(document)
 
     # Parse participant list
-    case_party_table = document.find_class("view-participants").pop()
-    try:
-        # Get table header
-        table_header = case_party_table.xpath(".//thead").pop()
-        table_header_columns = [lxml.html.tostring(th, method="text", encoding="utf-8").strip().decode("utf-8")
-                                for th in table_header.xpath(".//th")]
-
-        # Get table rows
-        table_data = []
-        for tr in case_party_table.xpath(".//tr")[1:]:
-            row = {}
-            i = 0
-            for td in tr.xpath(".//td"):
-                td_text = lxml.html.tostring(td, method="text", encoding="utf-8").strip().decode("utf-8")
-
-                # Handle field types
-                if table_header_columns[i] == "Participant":
-                    # Parse participant types
-                    td_lines = [line.strip() for line in td_text.splitlines()]
-                    if len(td_lines) == 3:
-                        row["party_role"] = td_lines[0]
-                        row["party_type"] = td_lines[1]
-                        row["party_name"] = td_lines[2]
-                    elif len(td_lines) == 4:
-                        row["party_role"] = td_lines[0]
-                        row["party_type"] = td_lines[1]
-                        row["party_name"] = td_lines[2]
-                        row["party_firm"] = td_lines[3]
-                    elif len(td_lines) > 1:
-                        row["party_role"] = td_lines[0]
-                        row["party_name"] = "\n".join(td_lines[1:])
-                    else:
-                        print(td_text)
-                elif table_header_columns[i] == "Address":
-                    row["party_address"] = td_text
-                elif table_header_columns[i] == "Phone":
-                    row["party_phone"] = td_text
-
-                i += 1
-
-            table_data.append(row)
-
-        case_party_df = pandas.DataFrame(table_data)
-    except ValueError:
-        case_party_df = pandas.DataFrame()
+    case_party_df = get_party_data(document)
 
     # Create return dictionary
     return {"case_number": case_number,
             "city": case_city,
             "date_filed": case_date_filed,
+            "elections": election_data,
             "region": case_region,
             "status": case_status,
             "close_reason": case_close,
             "docket": case_docket_df,
             "allegations": allegation_list,
             "participants": case_party_df}
+
+    return allegation_list

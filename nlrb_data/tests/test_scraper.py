@@ -104,3 +104,21 @@ def test_get_case_no_allegations():
     """
     case_info = get_case("02-RC-023360")
     assert_equal(len(case_info["allegations"]), 0)
+
+
+def test_get_case_elections():
+    """
+    Test case detail with election data.
+    :return:
+    """
+    case_info = get_case("01-RC-186442")
+    assert_equal(case_info["elections"].shape[0], 5)
+
+
+def test_get_case_no_elections():
+    """
+    Test case detail with election data.
+    :return:
+    """
+    case_info = get_case("21-CA-037931")
+    assert_equal(case_info["elections"].shape[0], 0)
