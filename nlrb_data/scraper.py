@@ -83,12 +83,12 @@ def get_page_count(url, session=None):
     else:
         pos0 += 6
         pos1 = pos0
-    
+
     next_char = buffer[pos1]
     while next_char in string.digits:
         pos1 += 1
-        next_char = buffer[pos1]    
-    
+        next_char = buffer[pos1]
+
     page_number = int(buffer[pos0:pos1])
     return page_number
 
@@ -243,9 +243,49 @@ def get_case(case_id, session=None):
     # Parse participant list
     case_party_table = document.find_class("view-participants").pop()
     try:
-        case_party_df = pandas.read_html(lxml.html.tostring(case_party_table)).pop()
+        # Get table header
+        table_header = case_party_table.xpath(".//thead").pop()
+        table_header_columns = [lxml.html.tostring(th, method="text", encoding="utf-8").strip().decode("utf-8")
+                                for th in table_header.xpath(".//th")]
+
+        # Get table rows
+        table_data = []
+        for tr in case_party_table.xpath(".//tr")[1:]:
+            row = {}
+            i = 0
+            for td in tr.xpath(".//td"):
+                td_text = lxml.html.tostring(td, method="text", encoding="utf-8").strip().decode("utf-8")
+
+                # Handle field types
+                if table_header_columns[i] == "Participant":
+                    # Parse participant types
+                    td_lines = [line.strip() for line in td_text.splitlines()]
+                    if len(td_lines) == 3:
+                        row["party_role"] = td_lines[0]
+                        row["party_type"] = td_lines[1]
+                        row["party_name"] = td_lines[2]
+                    elif len(td_lines) == 4:
+                        row["party_role"] = td_lines[0]
+                        row["party_type"] = td_lines[1]
+                        row["party_name"] = td_lines[2]
+                        row["party_firm"] = td_lines[3]
+                    elif len(td_lines) > 1:
+                        row["party_role"] = td_lines[0]
+                        row["party_name"] = "\n".join(td_lines[1:])
+                    else:
+                        print(td_text)
+                elif table_header_columns[i] == "Address":
+                    row["party_address"] = td_text
+                elif table_header_columns[i] == "Phone":
+                    row["party_phone"] = td_text
+
+                i += 1
+
+            table_data.append(row)
+
+        case_party_df = pandas.DataFrame(table_data)
     except ValueError:
-        case_docket_df = pandas.DataFrame()
+        case_party_df = pandas.DataFrame()
 
     # Create return dictionary
     return {"case_number": case_number,
