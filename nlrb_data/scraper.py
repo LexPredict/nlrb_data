@@ -374,9 +374,3 @@ def get_case(case_id, session=None):
             "docket": case_docket_df,
             "allegations": allegation_list,
             "participants": case_party_df}
-
-    return allegation_list
-
-if __name__ == "__main__":
-    case_info = get_case("01-RC-186442")
-    print(case_info["elections"].columns)
