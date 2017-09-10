@@ -298,6 +298,7 @@ def get_election_data(document):
                     continue
                 field_label = lxml.html.tostring(field_div.xpath(".//div")[0], method="text",
                                                  encoding="utf-8").strip().decode("utf-8")
+                field_label = field_label.strip(":").replace(" ", "_").lower()
                 field_value = lxml.html.tostring(field_div.xpath(".//div")[1], method="text",
                                                  encoding="utf-8").strip().decode("utf-8")
                 row[field_label] = field_value
@@ -375,3 +376,7 @@ def get_case(case_id, session=None):
             "participants": case_party_df}
 
     return allegation_list
+
+if __name__ == "__main__":
+    case_info = get_case("01-RC-186442")
+    print(case_info["elections"].columns)
