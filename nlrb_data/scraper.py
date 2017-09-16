@@ -232,7 +232,10 @@ def get_party_data(document):
     :return:
     """
     # Find the HTML element
-    case_party_table = document.find_class("view-participants").pop()
+    try:
+        case_party_table = document.find_class("view-participants").pop()
+    except IndexError as e:
+        return pandas.DataFrame()
 
     try:
         # Get table header
@@ -275,11 +278,9 @@ def get_party_data(document):
 
             table_data.append(row)
 
-        case_party_df = pandas.DataFrame(table_data)
+        return pandas.DataFrame(table_data)
     except ValueError:
-        case_party_df = pandas.DataFrame()
-
-    return case_party_df
+        return pandas.DataFrame()
 
 
 def get_election_data(document):

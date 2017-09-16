@@ -122,3 +122,11 @@ def test_get_case_no_elections():
     """
     case_info = get_case("21-CA-037931")
     assert_equal(case_info["elections"].shape[0], 0)
+
+
+def test_error_case_2():
+    """
+    Test observed error case.
+    :return:
+    """
+    case_info = get_case("29-CA-014566")
