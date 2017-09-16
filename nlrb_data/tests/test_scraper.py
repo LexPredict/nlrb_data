@@ -129,4 +129,4 @@ def test_error_case_2():
     Test observed error case.
     :return:
     """
-    case_info = get_case("29-CA-014566")
+    _ = get_case("29-CA-014566")

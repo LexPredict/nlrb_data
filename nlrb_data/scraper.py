@@ -234,7 +234,7 @@ def get_party_data(document):
     # Find the HTML element
     try:
         case_party_table = document.find_class("view-participants").pop()
-    except IndexError as e:
+    except IndexError:
         return pandas.DataFrame()
 
     try:
