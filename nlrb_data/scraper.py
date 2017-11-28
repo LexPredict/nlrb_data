@@ -25,11 +25,13 @@ BASE_URL = "https://www.nlrb.gov"
 SLEEP_INTERVAL = 1
 
 
-def get_case_list_url(dates=None, company=None, page_number=None):
+def get_case_list_url(dates=None, status=None, case_type=None, company=None, page_number=None):
     """
     Get the case list URL for a search based on
     date and/or company name.
+    :param case_type:
     :param dates:
+    :param status:
     :param company:
     :param page_number:
     :return:
@@ -52,6 +54,14 @@ def get_case_list_url(dates=None, company=None, page_number=None):
         url += "&f[{filter_number}]=date%3A{start_date}%20to%20{end_date}".format(filter_number=filter_number,
                                                                                   start_date=start_date,
                                                                                   end_date=end_date)
+        filter_number += 1
+
+    if status:
+        url += "&f[{filter_number}]=s%3A{status}".format(filter_number=filter_number, status=status)
+        filter_number += 1
+
+    if case_type:
+        url += "&f[{filter_number}]=ct%3A{case_type}".format(filter_number=filter_number, case_type=case_type)
         filter_number += 1
 
     if page_number:
@@ -152,15 +162,16 @@ def parse_case_list(buffer):
     return cases
 
 
-def get_case_list(dates=None, company=None, session=None):
+def get_case_list(dates=None, status=None, case_type=None, company=None, session=None):
     """
-    Get the list of cases matching a given query
-    on date or company.
+    Get the list of cases matching a given set of search parameters.
+    :param case_type:
     :param dates:
+    :param status:
     :param company:
+    :param session:
     :return:
     """
-
     # Create session if not provided
     if not session:
         session = requests.Session()
@@ -169,13 +180,13 @@ def get_case_list(dates=None, company=None, session=None):
     cases = []
 
     # Initial URL
-    initial_url = get_case_list_url(dates, company, page_number=0)
+    initial_url = get_case_list_url(dates, status, case_type, company, page_number=0)
     max_page_count = get_page_count(initial_url)
 
     # Iterate through all page requests
     for page_number in range(0, max_page_count):
         # Get URL and response
-        page_url = get_case_list_url(dates, company, page_number=page_number)
+        page_url = get_case_list_url(dates, status, case_type, company, page_number=page_number)
         response = session.get(page_url)
 
         # Parse result and sleep
