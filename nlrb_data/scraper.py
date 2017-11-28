@@ -23,7 +23,7 @@ import requests
 BASE_SEARCH_URL = "https://www.nlrb.gov/search/cases"
 BASE_URL = "https://www.nlrb.gov"
 SLEEP_INTERVAL = 1
-
+TIMEOUT = 5
 
 def get_case_list_url(dates=None, company=None, page_number=None):
     """
@@ -72,7 +72,7 @@ def get_page_count(url, session=None):
         session = requests.Session()
 
     # Execute query
-    response = session.get(url)
+    response = session.get(url, timeout=TIMEOUT)
     buffer = response.text
     time.sleep(SLEEP_INTERVAL)
 
@@ -176,7 +176,7 @@ def get_case_list(dates=None, company=None, session=None):
     for page_number in range(0, max_page_count):
         # Get URL and response
         page_url = get_case_list_url(dates, company, page_number=page_number)
-        response = session.get(page_url)
+        response = session.get(page_url, timeout=TIMEOUT)
 
         # Parse result and sleep
         cases.extend(parse_case_list(response.text))
@@ -232,7 +232,10 @@ def get_party_data(document):
     :return:
     """
     # Find the HTML element
-    case_party_table = document.find_class("view-participants").pop()
+    try:
+        case_party_table = document.find_class("view-participants").pop()
+    except IndexError as e:
+        return pandas.DataFrame()
 
     try:
         # Get table header
@@ -326,7 +329,7 @@ def get_case(case_id, session=None):
 
     # Get case URL and parse response
     case_url = "{base_url}/case/{case_id}".format(base_url=BASE_URL, case_id=case_id)
-    response = session.get(case_url)
+    response = session.get(case_url, timeout=TIMEOUT)
     document = lxml.html.fromstring(response.text)
 
     # Get case fields
