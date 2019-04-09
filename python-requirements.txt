@@ -11,4 +11,4 @@ pytest-pep8==1.0.6
 pytest-pylint==0.7.1
 python-coveralls==2.9.1
 python-dateutil==2.5.3
-requests==2.18.4
+requests==2.20.0
